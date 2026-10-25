@@ -1,0 +1,77 @@
+onboarding = false
+
+# ── Cyberpunk palette ───────────────────────────────────────────────────────
+# Every UI token is overridden, so the base theme only matters if a future
+# Herdr release adds new tokens.
+[theme]
+name = "dracula"
+auto_switch = false
+
+[theme.custom]
+accent = "#00F0FF"        # neon cyan: focused borders, highlights, prompts
+panel_bg = "#0D0221"      # tab bar, popups, modals
+sidebar_bg = "#090118"    # sidebar backdrop
+active_row_bg = "#2A0A4A" # active space / focused agent row
+selection_bg = "#4B0F6B"  # navigate-mode cursor row
+surface0 = "#1B0B3B"      # subtle surfaces
+surface1 = "#36176A"      # hover / active surfaces
+surface_dim = "#3A1466"   # separators, scrollbar tracks (dim neon violet)
+overlay0 = "#7A5FC0"      # muted text, unfocused borders
+overlay1 = "#A58BE6"      # secondary text, status bar entries
+text = "#E8FDFF"          # primary text
+subtext0 = "#B9C8F5"      # unfocused agent names, dim labels
+mauve = "#FF2BD6"         # hot magenta: branches, special labels
+green = "#39FF88"         # idle
+yellow = "#FCEE0A"        # working
+red = "#FF003C"           # blocked / needs attention
+blue = "#2E9BFF"          # unseen notifications
+teal = "#00FFC6"          # done
+peach = "#FF7A00"         # interrupted / warnings
+
+[ui]
+# Room for the agent logo on the same line as workspace + tab.
+sidebar_width = 30
+# Shape + color per state: ◐ working, × blocked, ✓ done, ○ idle.
+status_indicators = "symbols"
+# Neon frame around every pane; the frame title shows the agent's logo.
+pane_borders = "always"
+show_agent_labels_on_pane_borders = true
+tab_bar_right = [
+  { type = "zoom" },
+  { type = "text", text = "▚▞ NEON//NET" },
+  { type = "datetime", format = "%H:%M" },
+]
+tab_bar_right_separator = " ░ "
+
+# ── Agent rows: logo glyph instead of the agent's name ──────────────────────
+# The local.agent-icons plugin (~/.config/herdr/local-plugins/agent-icons)
+# replaces each agent's label with a Nerd Font logo; the rows below put that
+# logo on the first line and tint it with the agent's brand color.
+[ui.sidebar.agents]
+rows = [["state_icon", { token = "agent", fg = "#00F0FF", bold = true }, "machine", "workspace", "tab"]]
+
+[ui.sidebar.agents.rows_by_agent]
+agy = [["state_icon", { token = "agent", fg = "#4D8DFF", bold = true }, "machine", "workspace", "tab"]]
+amp = [["state_icon", { token = "agent", fg = "#FF3864", bold = true }, "machine", "workspace", "tab"]]
+claude = [["state_icon", { token = "agent", fg = "#FF8A5B", bold = true }, "machine", "workspace", "tab"]]
+cline = [["state_icon", { token = "agent", fg = "#B6FF3B", bold = true }, "machine", "workspace", "tab"]]
+codex = [["state_icon", { token = "agent", fg = "#E9FFF8", bold = true }, "machine", "workspace", "tab"]]
+copilot = [["state_icon", { token = "agent", fg = "#C77DFF", bold = true }, "machine", "workspace", "tab"]]
+cursor = [["state_icon", { token = "agent", fg = "#D7DBFF", bold = true }, "machine", "workspace", "tab"]]
+devin = [["state_icon", { token = "agent", fg = "#2DE2E6", bold = true }, "machine", "workspace", "tab"]]
+droid = [["state_icon", { token = "agent", fg = "#FF6A00", bold = true }, "machine", "workspace", "tab"]]
+gemini = [["state_icon", { token = "agent", fg = "#7AA2FF", bold = true }, "machine", "workspace", "tab"]]
+grok = [["state_icon", { token = "agent", fg = "#F5F5F5", bold = true }, "machine", "workspace", "tab"]]
+hermes = [["state_icon", { token = "agent", fg = "#FFD54A", bold = true }, "machine", "workspace", "tab"]]
+kilo = [["state_icon", { token = "agent", fg = "#F8F675", bold = true }, "machine", "workspace", "tab"]]
+kimi = [["state_icon", { token = "agent", fg = "#FFF07A", bold = true }, "machine", "workspace", "tab"]]
+kiro = [["state_icon", { token = "agent", fg = "#A36BFF", bold = true }, "machine", "workspace", "tab"]]
+letta = [["state_icon", { token = "agent", fg = "#FF6B9A", bold = true }, "machine", "workspace", "tab"]]
+maki = [["state_icon", { token = "agent", fg = "#FF8FA3", bold = true }, "machine", "workspace", "tab"]]
+mastracode = [["state_icon", { token = "agent", fg = "#F4F4F8", bold = true }, "machine", "workspace", "tab"]]
+muse = [["state_icon", { token = "agent", fg = "#2E8BFF", bold = true }, "machine", "workspace", "tab"]]
+omp = [["state_icon", { token = "agent", fg = "#FF2BD6", bold = true }, "machine", "workspace", "tab"]]
+opencode = [["state_icon", { token = "agent", fg = "#FFB000", bold = true }, "machine", "workspace", "tab"]]
+pi = [["state_icon", { token = "agent", fg = "#00E5FF", bold = true }, "machine", "workspace", "tab"]]
+qodercli = [["state_icon", { token = "agent", fg = "#2BFF9E", bold = true }, "machine", "workspace", "tab"]]
+qwen = [["state_icon", { token = "agent", fg = "#8C7BFF", bold = true }, "machine", "workspace", "tab"]]

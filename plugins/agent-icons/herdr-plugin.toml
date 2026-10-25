@@ -1,0 +1,21 @@
+id = "local.agent-icons"
+name = "Agent Icons"
+version = "1.0.0"
+min_herdr_version = "0.9.5"
+description = "Show coding agents as Nerd Font logo glyphs instead of text labels"
+platforms = ["macos", "linux"]
+
+# Re-apply glyphs after a server restart or live handoff.
+[[startup]]
+command = ["/bin/sh", "agent-icons.sh", "sync"]
+
+# Label every agent the moment Herdr detects it in a pane.
+[[events]]
+on = "pane.agent_detected"
+command = ["/bin/sh", "agent-icons.sh", "event"]
+
+[[actions]]
+id = "sync"
+title = "Refresh agent icons"
+contexts = ["global"]
+command = ["/bin/sh", "agent-icons.sh", "sync"]
