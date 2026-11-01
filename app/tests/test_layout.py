@@ -22,4 +22,5 @@ class Layout(unittest.TestCase):
         self.assertEqual(p["header"]["height"], 30)
     def test_mods(self):
         self.assertEqual(node(L, "tabs")["content"]["mod"], "nc-tabs")
+        self.assertEqual(node(L, "spaces")["content"]["mod"], "nc-spaces")
 if __name__ == "__main__": unittest.main()
