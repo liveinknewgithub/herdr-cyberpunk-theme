@@ -20,4 +20,6 @@ class Layout(unittest.TestCase):
         self.assertEqual(p["radius"], 0); self.assertEqual(p["gap"], 8); self.assertTrue(p["lone"])
         self.assertEqual(p["border"], {"width": 1, "color": "border"}); self.assertEqual(p["focus"], {"width": 1, "color": "accent"})
         self.assertEqual(p["header"]["height"], 30)
+    def test_mods(self):
+        self.assertEqual(node(L, "tabs")["content"]["mod"], "nc-tabs")
 if __name__ == "__main__": unittest.main()
