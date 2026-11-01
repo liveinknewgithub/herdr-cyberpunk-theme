@@ -1,6 +1,6 @@
 # Herdr Cyberpunk Theme
 
-Neon-noir theme for [Herdr](https://herdr.dev): a deep violet palette with neon cyan, hot magenta, and yellow/red status colors, plus a plugin that shows each coding agent as its logo instead of its name.
+Cyberpunk 2077 theme for [Herdr](https://herdr.dev), in two parts: the Night City layout for the desktop app, and a matching theme for the Herdr TUI (yellow on near-black, with a plugin that shows each coding agent as its logo instead of its name).
 
 ## App layout (Night City)
 
@@ -63,11 +63,15 @@ python3 -I -m unittest discover -s app/tests -p 'test_*.py' -v
 app/tests/test_install.sh
 ```
 
+## TUI theme
+
+The Herdr TUI uses the same palette as the app layout: yellow `#FCEE0A` on near-black, cyan `#00F0FF` branches and red `#FF003C` for blocked.
+
 ## What's included
 
 | Path | Purpose |
 | --- | --- |
-| `config.toml` | Full Herdr config: `[theme.custom]` palette, symbol status indicators, neon pane frames labeled with agent logos, a `NEON//NET` tab-bar readout, and one-line agent rows tinted with each agent's brand color. |
+| `config.toml` | Full Herdr config: `[theme.custom]` palette (yellow `#FCEE0A` on near-black, cyan `#00F0FF` branches, red `#FF003C` blocked), symbol status indicators, pane frames labeled with agent logos, a `NIGHT CITY // 2077 // HH:MM` tab-bar readout, one-line agent rows with a single yellow glyph per agent (no per-agent brand-color table), and space rows with the workspace in yellow and the branch in cyan. |
 | `plugins/agent-icons/` | `local.agent-icons` plugin. When Herdr detects an agent (and at server startup) it sets the agent's display name to a Nerd Font logo with `herdr pane report-metadata --display-agent`, guarded by `--agent` so the logo goes away when that agent exits. |
 
 ## Requirements
@@ -93,7 +97,7 @@ herdr server reload-config
 ## Customize
 
 - Icons: edit the `case` block in `plugins/agent-icons/agent-icons.sh`. Each line names the Nerd Font glyph and codepoint; agents without a mapping keep their text name.
-- Agent colors: `[ui.sidebar.agents.rows_by_agent]` in `config.toml`.
+- Agent glyph color: the `fg` in `[ui.sidebar.agents]` in `config.toml`. Add a `[ui.sidebar.agents.rows_by_agent]` table if you want per-agent colors.
 - Pane frames: `pane_borders = "always"` frames every pane; `"auto"` frames only splits.
 
 Matching terminal colors: [ghostty-cyberpunk-theme](https://github.com/liveinknewgithub/ghostty-cyberpunk-theme).
