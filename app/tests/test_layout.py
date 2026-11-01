@@ -21,8 +21,12 @@ class Layout(unittest.TestCase):
         self.assertEqual(p["border"], {"width": 1, "color": "border"}); self.assertEqual(p["focus"], {"width": 1, "color": "accent"})
         self.assertEqual(p["header"]["height"], 30)
     def test_mods(self):
-        self.assertEqual(node(L, "tabs")["content"]["mod"], "nc-tabs")
+        self.assertEqual(node(L, "brand")["content"]["mod"], "nc-chrome")
+        self.assertEqual(node(L, "sidebar-footer")["content"]["mod"], "nc-chrome")
+        self.assertEqual(node(L, "sidebar-footer")["content"]["props"], {"footer": True})
         self.assertEqual(node(L, "spaces")["content"]["mod"], "nc-spaces")
         self.assertEqual(node(L, "agents")["content"]["mod"], "nc-agents")
+        self.assertEqual(node(L, "tabs")["content"]["mod"], "nc-tabs")
         self.assertEqual(node(L, "main")["content"]["pane"]["header"]["content"]["mod"], "nc-pane")
+        self.assertEqual(node(L, "status")["content"]["mod"], "nc-status")
 if __name__ == "__main__": unittest.main()
