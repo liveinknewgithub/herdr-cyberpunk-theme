@@ -31,6 +31,7 @@ export default class NewMenu extends View {
       cx.notify();
     });
   }
+  // `icon` is a function of `hot` (pointer over an enabled row): svgs must take the hover ink explicitly, they do not follow the row's hover text color.
   row(id, icon, name, action, hint = "", enabled = true) {
     const t = theme();
     const hot = enabled && this.hot === id;
@@ -39,7 +40,7 @@ export default class NewMenu extends View {
       .when(enabled, el => el.hover(s => s.bg(t.accent).text_color(t.accent_foreground))
         .on_hover((over, cx) => { if (over) this.hot = id; else if (this.hot === id) this.hot = null; cx.notify(); }))
       .on_click(() => { if (enabled) { closeOverlay(props().overlay); action(); } })
-      .child(icon).child(div().flex_1().child(name)).child(div().text_size(11).text_color(hot ? t.accent_foreground : t.dim).child(hint));
+      .child(icon(hot)).child(div().flex_1().child(name)).child(div().text_size(11).text_color(hot ? t.accent_foreground : t.dim).child(hint));
   }
   render() {
     const t = theme();
@@ -61,15 +62,15 @@ export default class NewMenu extends View {
       .child(div().absolute().top(10).right(0).bottom(0).w(1).bg(t.accent))
       .child(div().absolute().bottom(0).left(0).right(0).h(1).bg(t.accent))
       .child(div().absolute().top(0).left(0).bottom(0).w(1).bg(t.accent))
-      .child(this.row("terminal", svg("icons/shell.svg").size(14), "TERMINAL", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
+      .child(this.row("terminal", hot => svg("icons/shell.svg").size(14).when(hot, el => el.text_color(theme().accent_foreground)), "TERMINAL", () => run("tab.new", { space: space?.id }), shortcut("tab.new")))
       .child(div().px(9).pt(8).pb(4).text_size(10.5).font_bold().text_color(t.accent).child("START AN AGENT"))
       .child(v_flex().flex_1().min_h(0).overflow_y_scrollbar()
-        .children(choices.map((a, i) => this.row(a.key, a.tint ? svg(a.icon).size(14).text_color(t.foreground) : image(a.icon).size(14), a.name,
+        .children(choices.map((a, i) => this.row(a.key, a.tint ? hot => svg(a.icon).size(14).text_color(hot ? t.accent_foreground : t.foreground) : () => image(a.icon).size(14), a.name,
           () => run("tab.new", { name: a.name, space: space?.id, argv: a.run }), a.installed ? (i < 9 ? String(i + 1) : "") : "not installed", a.installed)))
         .when(this.agents.length === 0, el => el.child(div().px(9).py(6).text_color(t.dim).child(this.failed ? "Could not load agents" : "Checking installed agents…"))))
       .child(div().h(1).mx(4).my(5).bg(t.border))
-      .child(this.row("space", div().w(14).child("+"), "New space", () => run("space.new"), shortcut("space.new")))
-      .child(this.row("worktree", svg("mods/workspace-chrome/branch.svg").size(14), "New worktree…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
-      .child(this.row("worktree-open", svg("mods/workspace-chrome/branch.svg").size(14), "Open worktree\u2026", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)));
+      .child(this.row("space", hot => div().w(14).child("+"), "New space", () => run("space.new"), shortcut("space.new")))
+      .child(this.row("worktree", hot => svg("mods/workspace-chrome/branch.svg").size(14).when(hot, el => el.text_color(theme().accent_foreground)), "New worktree…", () => openOverlay({ mod: "worktree", kind: "dialog", width: 460, height: 280, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "new" } }), "", Boolean(space)))
+      .child(this.row("worktree-open", hot => svg("mods/workspace-chrome/branch.svg").size(14).when(hot, el => el.text_color(theme().accent_foreground)), "Open worktree\u2026", () => openOverlay({ mod: "worktree", kind: "dialog", width: 560, height: 480, props: { space: space?.id, folder: panes().find(p => p.focused)?.cwd, action: "open" } }), "", Boolean(space)));
   }
 }
