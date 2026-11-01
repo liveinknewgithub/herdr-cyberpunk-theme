@@ -1,0 +1,4 @@
+.superpowers/
+.DS_Store
+app/mods/*/gpui-kit.d.ts
+app/mods/*/jsconfig.json
