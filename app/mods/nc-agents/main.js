@@ -368,7 +368,7 @@ export default class Agents extends View {
         .when(subs.length > 0, el => el.child(fold(a, subs)))
         .when(this.hovered === a.address, el => el.child(pin))
         .when(this.hovered !== a.address && Boolean(when), el => el.child(div().flex_none().text_size(11).text_color(t.dim).child(duration(now - when))))
-        .child(this.status(t, a, byPriority && !isPinned, a.focused ? t.selected : t.chrome));
+        .child(this.status(t, a, byPriority && !isPinned, a.focused ? t.selected : this.hovered === a.address ? t.hover : t.chrome));
     };
 
     // Groups in list order: spaces (grouped) or priority sections. Agents of a

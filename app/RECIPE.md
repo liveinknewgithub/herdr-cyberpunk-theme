@@ -124,11 +124,13 @@ and agent names stay as typed. Terminals keep the person's own font with
   - At the left is a 42 px cap of `#FCEE0A` hazard stripes (7 px every
     14 px). Its bottom-right corner is cut 10 px, so the stripes end on a
     diagonal.
-  - Then come readouts at 11.5 px bold caps in `#9A9B8E`:
+  - Then come readouts at 11.5 px bold caps in `#9A9B8E`, 16 px apart (the
+    bar's own gap, which also separates the cap from the first readout; no
+    extra spacer):
     - `▣ THIS COMPUTER` (or the machine name)
     - `⎇ BRANCH`, when the space has one
-    - a 6 px round `#5EF38C` dot and `N AGENTS` (it reads `1 AGENTS` with
-      one agent), plus `· N NEEDS YOU` in `#FF003C` when any are blocked
+    - a 6 px round `#5EF38C` dot and `N AGENTS` (`1 AGENT` with one agent),
+      plus `· N NEEDS YOU` in `#FF003C` when any are blocked
     - the fixed readout `NC_OS 2.077 // ONLINE` in `#FCEE0A`
   - At the right, the palette key as actually bound (`⌘⇧P COMMANDS`), in
     `#5A5B52`.
@@ -306,8 +308,18 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
 - In `settings.json` it sets only `theme`, `sounds.done` and
   `sounds.blocked`, after a backup.
 - It runs `herdr-app check` on each installed mod. When the app is running,
-  it switches to `main`, runs `app.theme --name cyberpunk-2077`, switches to
-  `night-city` and prints `herdr-app status` errors.
+  it records `main`'s dark theme pick (from `layouts/.state/main.json`, null
+  when there is none) in the sidecar `night-city.uninstall.json` as
+  `{"main_dark_pick": …}`, switches to `main`, runs `app.theme --name
+  cyberpunk-2077`, switches to `night-city` and prints `herdr-app status`
+  errors. A re-install over a live install keeps the pick recorded before.
+- `--uninstall` restores `settings.json` first, then, with the app running,
+  shows `main` and runs `app.theme --name <x>`: the recorded pick, else the
+  restored theme's `dark` half when `theme` is an object, else `graphite`.
+  It skips that when `main` has since been given another theme. It removes
+  the sidecar with the other files. With the app closed or `--no-app` it
+  prints `open Herdr, show the main layout, then run: herdr-app do
+  app.theme --name <x>`.
 
 ## Watch out
 
@@ -325,7 +337,11 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   inside a still-square box. That chamfer was dropped.
 - **`PathCoordinate` is px or percent, never an expression.** You can't write
   `100% - 8px`, so each chamfer is its own `cut×cut` element pinned to a
-  corner, with px points inside it.
+  corner, with percent points (`"0%"`/`"100%"`) inside it.
+- **Path px don't follow the app's zoom; element sizes do.** With px
+  vertices, at zoom 1.3 every triangle sat inside its box with a strip of the
+  surface showing past the cut. `geometry.js` therefore gives the vertices as
+  percents of the box.
 - **`Background.stop(color, pos)` takes a 0–1 fraction**, not a percent:
   `stop(c, 0.4)` ends at 40 %, and `40` runs off the end.
 - **Fonts load at start and on the next look change.** Fonts in a mod's
@@ -347,11 +363,11 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   `picker`, `confirm`, `prompt`, `files`, `changes`, settings and the palette
   take the theme colors, but the layout can't own them, so they keep rounded
   corners and stock type.
-- **Several states were verified by code, not seen.** Blocked, done and
-  pinned, and the sort popup's hover, were never on screen: only one live
-  agent ran during the build. The first real blocked agent is the live test
-  of the blinking NEEDS YOU tag.
-- **The status bar reads `1 AGENTS`.** The label isn't pluralized yet.
+- **Some states were verified by code, not seen.** Pinned agents and the
+  sort popup's hover were never on screen. Blocked and done were checked
+  with a throwaway shell that printed OSC 7501 reports
+  (`printf '\033]7501;state=blocked\033\\'`). A done agent only shows as
+  done while its pane is not in front; in front it reads idle.
 - **The mods need Herdr's shipped mods.** They load assets from shipped
   `workspace-chrome`, `pane`, `files` and `changes` by path, and open shipped
   `menu`, `picker`, `machine-add` and `worktree`. Built against
@@ -368,9 +384,22 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   - The backup is single-use. If one exists but the current settings hold
     none of the managed values, it is moved aside as `.bak-night-city.<unix
     time>` and a fresh one is taken.
+  - A `theme` that is a `{light, dark}` object keeps its light half: only
+    `dark` is set to `cyberpunk-2077`.
+  - With no backup but settings that already hold the managed values, the
+    fresh backup is written without them, so uninstall can't restore
+    `cyberpunk-2077` or `sounds/nc-*` over files it just removed.
   - Uninstall restores the three keys (or the whole file, if nothing else
     changed) and leaves the active backup in place.
-  - Existing `nc-*` files stop the install unless `--force` is given.
+  - Existing `nc-*` files (and the sidecar) stop the install unless
+    `--force` is given.
+- **`main`'s theme pick is app-owned.** `app.theme` writes the shown
+  layout's pick into `layouts/.state/main.json`, and so does
+  `layouts/.state/night-city.json` for this layout. The installer only reads
+  them. Both outlive uninstall unless the app is running then: with it
+  running, uninstall replays the pick recorded in
+  `night-city.uninstall.json`; with it closed (or `--no-app`) it prints the
+  `herdr-app do app.theme --name <x>` line to run later.
 
 ## Done when
 
@@ -382,24 +411,30 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   (theme, layout, sounds).
 - `app/tests/test_install.sh` passes. `--home <tmp> --no-app` then
   `--uninstall` leaves `settings.json` byte-identical to its backup, with no
-  `nc-*`, `night-city*` or `cyberpunk-2077*` files left behind.
+  `nc-*`, `night-city*` or `cyberpunk-2077*` files left behind (the
+  `night-city.uninstall.json` sidecar included). With a stub `herdr-app`, it
+  checks that uninstall replays the recorded `main` pick, and that an object
+  theme keeps its light half.
 - `herdr-app check ~/.config/herdr-app/mods/nc-<name>` passes for all seven
   mods, and `herdr-app status` shows `"layout": "night-city"` and
   `"errors": []`.
 - `herdr-app shot` with at least 2 spaces, 2 tabs and a working agent shows
-  all of these:
+  all of these (the agent-dependent ones only when an agent's pane is
+  focused/in front):
   - the ram mark and the cyan/red-split `HERDR` above `▚▞ NIGHT CITY`, with a
     yellow line under the brand block
-  - olive active-space and focused-agent rows with the yellow left bar and a
-    cut corner
+  - an olive active-space row with the yellow left bar and a cut corner, and
+    the same for the focused-agent row when an agent's pane is focused/in
+    front
   - a yellow active tab with black `01 · …` text and a cut corner
-  - a yellow-framed focused pane with the yellow-washed header, which reads
-    `WORKING` plus a spinner when the agent's pane is in front
+  - a yellow-framed focused pane with the yellow-washed header; when an
+    agent's pane is focused/in front, it reads `WORKING` plus a spinner
   - hazard stripes at the status bar cap and above the footer
   - Rajdhani caps in all the chrome, with terminals in their own font
 - With a blocked agent, the red `NEEDS YOU` tag pulses in the agents list
   and the pane header, and the status bar adds `· 1 NEEDS YOU` in red. A
-  done agent shows a cyan `◆`.
+  done agent (its pane not in front) shows a cyan `◆` under a cyan `DONE`
+  header. The status bar reads `1 AGENT` with one agent.
 - The sidebar toggle (or dragging the sidebar under 160 px) gives the rail:
   numbers and status marks, plus the 14 px ram on macOS. `»` restores it,
   and the traffic lights overlap nothing.

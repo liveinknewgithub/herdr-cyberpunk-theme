@@ -30,10 +30,9 @@ export default class WorkspaceStatus extends View {
       .child(stripesLayer(t.accent, 7, 14)).child(cutCorner(t.chrome, 10, "br"));
     return h_flex().size_full().gap(16).items_center().bg(t.chrome).border_t(1).border_color(t.border).text_size(11.5).font_bold().text_color(t.muted)
       .child(cap)
-      .child(div().w(14).flex_none())
       .child(label("▣", space?.machine ?? "This computer"))
       .when(Boolean(space?.branch), el => el.child(label("⎇", space.branch)))
-      .child(h_flex().gap(6).items_center().child(div().size(6).rounded(3).bg(t.idle)).child(`${list.length} AGENTS`)
+      .child(h_flex().gap(6).items_center().child(div().size(6).rounded(3).bg(t.idle)).child(`${list.length} ${list.length === 1 ? "AGENT" : "AGENTS"}`)
         .when(needs > 0, el => el.child(div().text_color(t.blocked).child(`· ${needs} NEEDS YOU`))))
       .child(div().text_color(t.accent).child("NC_OS 2.077 // ONLINE"))
       .child(div().flex_1())

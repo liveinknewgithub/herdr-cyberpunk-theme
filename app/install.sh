@@ -6,11 +6,16 @@
 #
 # Only files named night-city*, cyberpunk-2077*, nc-* (and sounds/nc-*) are
 # ever copied or removed. In settings.json only three keys are written:
-# theme, sounds.done and sounds.blocked. Everything else is the person's.
+# theme (or only theme.dark when theme is a {light, dark} object),
+# sounds.done and sounds.blocked. Everything else is the person's.
+# night-city.uninstall.json records main's dark theme pick from before the
+# install, so --uninstall can put it back.
 set -euo pipefail
 
-SRC=$(cd "$(dirname "$0")" && pwd)
+SRC=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 BACKUP_NAME=settings.json.bak-night-city
+SIDECAR=night-city.uninstall.json
+FALLBACK_THEME=graphite
 THEME=cyberpunk-2077
 LAYOUT=night-city
 
@@ -60,6 +65,8 @@ list_targets() {
   [ -f "$SRC/themes/$THEME.json" ] && echo "themes/$THEME.json"
   for f in "$SRC"/mods/nc-*; do [ -d "$f" ] && echo "mods/${f##*/}"; done
   for f in "$SRC"/sounds/nc-*.mp3; do [ -f "$f" ] && echo "sounds/${f##*/}"; done
+  # Written by this script, not copied from the repo.
+  echo "$SIDECAR"
   return 0
 }
 
@@ -108,6 +115,9 @@ copy_files() {
     die "already in $HOME_DIR: ${existing[*]} (re-run with --force to replace)"
   fi
   for t in "${TARGETS[@]}"; do
+    # The sidecar is (re)written by apply_app; a stale one keeps the
+    # pre-install pick when the app isn't running for a --force re-install.
+    [ "$t" = "$SIDECAR" ] && continue
     mkdir -p "$(dirname "$HOME_DIR/$t")"
     rm -rf "${HOME_DIR:?}/$t"
     cp -R "$SRC/$t" "$HOME_DIR/$t"
@@ -116,7 +126,7 @@ copy_files() {
       find "$HOME_DIR/$t" \( -name .DS_Store -o -name gpui-kit.d.ts -o -name jsconfig.json \) -delete
     fi
   done
-  echo "copied ${#TARGETS[@]} items into $HOME_DIR"
+  echo "copied $((${#TARGETS[@]} - 1)) items into $HOME_DIR"
 }
 
 # Validates settings.json (and a backup that would be kept) before anything
@@ -143,7 +153,9 @@ def load(p):
 
 s = load(path) if os.path.exists(path) else {}
 snd = s.get("sounds") or {}
-managed = s.get("theme") == theme or any(
+t = s.get("theme")
+ours = t == theme or (isinstance(t, dict) and t.get("dark") == theme)
+managed = ours or any(
     isinstance(snd.get(k), str) and snd[k].startswith("sounds/nc-") for k in ("done", "blocked"))
 if managed and os.path.exists(backup_path):
     load(backup_path)
@@ -170,12 +182,41 @@ merge_settings() {
     archive_backup
   fi
   if [ ! -e "$backup" ]; then
-    if [ -e "$settings" ]; then
+    if [ -e "$settings" ] && [ "$SETTINGS_STATE" = managed ]; then
+      # Already holds our values but there is no backup (deleted, or set by
+      # hand): back up without them, so uninstall never restores
+      # cyberpunk-2077 or sounds/nc-* over files it has just removed.
+      python3 -I - "$settings" "$backup" "$THEME" <<'PY'
+import json, sys
+path, backup_path, theme = sys.argv[1], sys.argv[2], sys.argv[3]
+OURS = {"done": "sounds/nc-done.mp3", "blocked": "sounds/nc-blocked.mp3"}
+with open(path, encoding="utf-8") as f:
+    s = json.load(f)
+t = s.get("theme")
+if t == theme:
+    del s["theme"]
+elif isinstance(t, dict) and t.get("dark") == theme:
+    del t["dark"]
+    if not t:
+        del s["theme"]
+snd = s.get("sounds")
+if isinstance(snd, dict):
+    for k, v in OURS.items():
+        if snd.get(k) == v:
+            del snd[k]
+    if not snd:
+        del s["sounds"]
+with open(backup_path, "w", encoding="utf-8") as f:
+    f.write(json.dumps(s, indent=2, ensure_ascii=False) + "\n")
+PY
+      echo "backed up settings.json to $BACKUP_NAME (without the night-city values it already held)"
+    elif [ -e "$settings" ]; then
       cp "$settings" "$backup"
+      echo "backed up settings.json to $BACKUP_NAME"
     else
       printf '{}\n' > "$backup"
+      echo "backed up settings.json to $BACKUP_NAME"
     fi
-    echo "backed up settings.json to $BACKUP_NAME"
   fi
   python3 -I - "$settings" "$THEME" <<'PY'
 import json, os, sys
@@ -192,7 +233,11 @@ try:
         sounds = {}
     if not isinstance(sounds, dict):
         raise ValueError('"sounds" is not an object')
-    s["theme"] = theme
+    # A {light, dark} theme keeps its light half; only dark is ours.
+    if isinstance(s.get("theme"), dict):
+        s["theme"]["dark"] = theme
+    else:
+        s["theme"] = theme
     sounds["done"] = "sounds/nc-done.mp3"
     sounds["blocked"] = "sounds/nc-blocked.mp3"
     s["sounds"] = sounds
@@ -245,8 +290,13 @@ try:
         # take out values that point at what we are about to remove.
         if not have:
             sys.exit(0)
-        if cur.get("theme") == theme:
+        t = cur.get("theme")
+        if t == theme:
             del cur["theme"]
+        elif isinstance(t, dict) and t.get("dark") == theme:
+            del t["dark"]
+            if not t:
+                del cur["theme"]
         snd = cur.get("sounds")
         if isinstance(snd, dict):
             for k, v in OURS.items():
@@ -325,6 +375,7 @@ apply_app() {
     echo "If main keeps its old colors, show main and run: herdr-app do app.theme --name $THEME"
     return 0
   fi
+  record_main_pick
   app_do layout.switch --name main
   app_do app.theme --name "$THEME"
   app_do layout.switch --name "$LAYOUT"
@@ -332,7 +383,8 @@ apply_app() {
   print_status_errors
 }
 
-# main's dark theme pick, from the app's click state (read only).
+# main's dark theme pick, from the app's click state (read only); empty
+# when main has no pick.
 main_dark_pick() {
   local state="$HOME_DIR/layouts/.state/main.json"
   [ -f "$state" ] || return 0
@@ -340,26 +392,113 @@ main_dark_pick() {
 import json, sys
 try:
     t = json.load(open(sys.argv[1], encoding="utf-8")).get("theme") or {}
-    print(t.get("dark", "") if isinstance(t, dict) else "")
+    d = t.get("dark") if isinstance(t, dict) else None
+    print(d if isinstance(d, str) else "")
 except Exception:
     print("")
 PY
 }
 
-backup_theme() {
-  local backup="$HOME_DIR/$BACKUP_NAME"
-  [ -f "$backup" ] || return 0
-  python3 -I - "$backup" <<'PY'
+# The pick recorded in the sidecar; empty when null, missing, unreadable, or ours.
+sidecar_pick() {
+  local f="$HOME_DIR/$SIDECAR"
+  [ -f "$f" ] || return 0
+  python3 -I - "$f" "$THEME" <<'PY'
 import json, sys
 try:
-    t = json.load(open(sys.argv[1], encoding="utf-8")).get("theme")
-    print(t if isinstance(t, str) else "")
+    p = json.load(open(sys.argv[1], encoding="utf-8")).get("main_dark_pick")
+    print(p if isinstance(p, str) and p and p != sys.argv[2] else "")
 except Exception:
     print("")
 PY
+}
+
+# Writes main's pre-install dark pick to the sidecar ({"main_dark_pick": null}
+# when main has none). On a re-install main already shows ours: keep the
+# pick an earlier install recorded instead.
+record_main_pick() {
+  local pick
+  pick=$(main_dark_pick)
+  if [ "$pick" = "$THEME" ]; then pick=$(sidecar_pick); fi
+  python3 -I - "$HOME_DIR/$SIDECAR" "$pick" <<'PY'
+import json, sys
+with open(sys.argv[1], "w", encoding="utf-8") as f:
+    f.write(json.dumps({"main_dark_pick": sys.argv[2] or None}) + "\n")
+PY
+  echo "recorded main's theme pick (${pick:-none}) in $SIDECAR"
+}
+
+# The dark half of the (already restored) settings.json theme when it is a
+# {light, dark} object, else graphite. A plain name may be a light theme,
+# and app.theme with a light name would set main's light half instead.
+settings_dark_theme() {
+  python3 -I - "$HOME_DIR/settings.json" "$THEME" "$FALLBACK_THEME" <<'PY'
+import json, sys
+path, ours, fallback = sys.argv[1], sys.argv[2], sys.argv[3]
+try:
+    t = json.load(open(path, encoding="utf-8")).get("theme")
+    d = t.get("dark") if isinstance(t, dict) else None
+    print(d if isinstance(d, str) and d and d != ours else fallback)
+except Exception:
+    print(fallback)
+PY
+}
+
+# The theme main goes back to: the recorded pick, else settings_dark_theme.
+restore_target() {
+  local pick
+  pick=$(sidecar_pick)
+  [ -n "$pick" ] || pick=$(settings_dark_theme)
+  echo "$pick"
+}
+
+# main's pick still needs undoing unless the person has since picked a
+# theme other than ours (an empty pick means unknown: undo it).
+main_needs_restore() {
+  local pick
+  pick=$(main_dark_pick)
+  [ -z "$pick" ] || [ "$pick" = "$THEME" ]
 }
 
 uninstall() {
+  # Settings first: if the backup is broken nothing else is touched.
+  restore_settings
+  local target drove=0
+  target=$(restore_target)
+  if [ "$NO_APP" -ne 1 ]; then
+    find_app
+    if app_running; then
+      drove=1
+      local shown
+      shown=$(shown_layout)
+      if [ "$shown" = "$LAYOUT" ]; then
+        app_do layout.switch --name main
+        shown=main
+      fi
+      if main_needs_restore; then
+        # app.theme sets the shown layout's pick, so it has to be main.
+        [ "$shown" = main ] || app_do layout.switch --name main
+        app_do app.theme --name "$target"
+        if [ -n "$shown" ] && [ "$shown" != main ]; then app_do layout.switch --name "$shown"; fi
+        echo "main's theme set back to $target"
+      fi
+    fi
+  fi
+  local t removed=0
+  for t in "${TARGETS[@]}"; do
+    if [ -e "$HOME_DIR/$t" ] || [ -L "$HOME_DIR/$t" ]; then
+      rm -rf "${HOME_DIR:?}/$t"
+      removed=$((removed + 1))
+    fi
+  done
+  echo "removed $removed items from $HOME_DIR (kept $BACKUP_NAME)"
+  if [ "$drove" -ne 1 ] && main_needs_restore; then
+    echo "Herdr wasn't driven, so main may still pick $THEME. To put it back,"
+    echo "open Herdr, show the main layout, then run: herdr-app do app.theme --name $(printf %q "$target")"
+  fi
+}
+
+install() {
   if [ "$NO_APP" -ne 1 ]; then
     find_app
     if app_running; then
@@ -398,7 +537,7 @@ install() {
     echo "using $("$HERDR" --version 2>/dev/null || echo "herdr-app (version unknown)") at $HERDR"
   fi
   local home_flag=""
-  [ "$HOME_DIR" = "$HOME/.config/herdr-app" ] || home_flag=" --home $HOME_DIR"
+  [ "$HOME_DIR" = "$HOME/.config/herdr-app" ] || home_flag=" --home $(printf %q "$HOME_DIR")"
   check_settings
   copy_files
   merge_settings
@@ -410,7 +549,7 @@ install() {
 
 Night City is installed in $HOME_DIR.
   Go back:   ⌘⇧L cycles layouts, or: herdr-app do layout.switch --name main
-  Uninstall: $SRC/install.sh --uninstall$home_flag
+  Uninstall: $(printf %q "$SRC/install.sh") --uninstall$home_flag
 EOF
 }
 
@@ -418,7 +557,7 @@ main() {
   parse_args "$@"
   if [ "$UNINSTALL" -ne 1 ]; then mkdir -p "$HOME_DIR"; fi
   [ -d "$HOME_DIR" ] || die "no Herdr app home at $HOME_DIR"
-  HOME_DIR=$(cd "$HOME_DIR" && pwd)
+  HOME_DIR=$(CDPATH= cd -- "$HOME_DIR" && pwd)
   export HERDR_APP_HOME="$HOME_DIR"
   load_targets
   if [ "$UNINSTALL" -eq 1 ]; then

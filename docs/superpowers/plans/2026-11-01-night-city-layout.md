@@ -20,7 +20,7 @@
 - Palette (verbatim from the spec): accent `#FCEE0A`, accent_foreground `#07080A`, canvas `#07080A`, chrome `#0C0D11`, popover `#0C0D11`, surface `#121318`, raised `#1A1B21`, hover `#1F2027`, selected `#2A2708`, border `#2A2B2F`, input `#3A3B40`, foreground `#F0EEE4`, muted `#9A9B8E`, dim `#5A5B52`, working `#FCEE0A`, blocked `#FF003C`, done `#55EAD4`, idle `#5EF38C`, unknown `#5A5B52`, selection `#4A4410`, cursor `#FCEE0A`. Mods read these through `theme()`; never hardcode them except where the spec says (glitch cyan `#00F0FF` / red `#FF003C`, avatar MARK map, header gradient stops).
 - Red is only ever *blocked / needs you*.
 - Repo copies exclude the app-written `gpui-kit.d.ts` and `jsconfig.json` inside mod folders.
-- Screenshots go to `/private/tmp/claude-501/-Users-liveink-Documents-GitHub/d440acb1-298b-45fc-87cc-ad92fd940cdd/scratchpad/shots/` (create it); read each PNG with the Read tool and judge it against the task's pass list.
+- Screenshots go to `<scratch>/shots/` (create it; `<scratch>` is a local scratch folder of your choice, never committed); read each PNG with the Read tool and judge it against the task's pass list.
 - Sync a finished mod to the repo with
   `rsync -a --delete --exclude gpui-kit.d.ts --exclude jsconfig.json ~/.config/herdr-app/mods/<name>/ app/mods/<name>/`.
 

@@ -73,4 +73,63 @@ chmod +x "$tmp/bin/herdr-app"
 out=$(PATH="$tmp/bin:$PATH" "$here/install.sh" --home "$tmp/g" 2>&1) || fail "install with failing status exited non-zero: $out"
 case "$out" in *"Uninstall:"*) ;; *) fail "hints not printed after failing status" ;; esac
 [ "$(grep '^do ' "$STUB_LOG" | tr '\n' '|')" = "do layout.switch --name main|do app.theme --name cyberpunk-2077|do layout.switch --name night-city|" ] || fail "unexpected app calls: $(cat "$STUB_LOG")"
+# 7. a running stub app that always answers status (it shows night-city)
+mkdir -p "$tmp/bin2"; export STUB2_LOG="$tmp/stub2.log"
+cat > "$tmp/bin2/herdr-app" <<'EOF'
+#!/bin/sh
+echo "$*" >> "$STUB2_LOG"
+case "$1" in
+  --version) echo "herdr-app stub" ;;
+  status) echo '{"layout":"night-city","errors":[]}' ;;
+  check) echo "check passed: $2" ;;
+  do) echo '{"ok": true}' ;;
+esac
+EOF
+chmod +x "$tmp/bin2/herdr-app"
+# what the app writes when app.theme runs on main
+set_pick() { mkdir -p "$1/layouts/.state"; printf '{"theme":{"light":"paper","dark":"%s"}}\n' "$2" > "$1/layouts/.state/main.json"; }
+# 7a. uninstall replays the recorded pick (graphite), not the backup's theme (paper)
+mkdir -p "$tmp/h"; printf '{"theme":"paper"}\n' > "$tmp/h/settings.json"
+"$here/install.sh" --home "$tmp/h" --no-app >/dev/null || fail "install h"
+printf '{"main_dark_pick": "graphite"}\n' > "$tmp/h/night-city.uninstall.json"; set_pick "$tmp/h" cyberpunk-2077
+: > "$STUB2_LOG"; PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/h" --uninstall >/dev/null || fail "uninstall h"
+grep -qx 'do app.theme --name graphite' "$STUB2_LOG" || fail "uninstall did not replay graphite: $(cat "$STUB2_LOG")"
+grep -q 'app.theme --name paper' "$STUB2_LOG" && fail "uninstall used the backup theme over the recorded pick"
+[ ! -e "$tmp/h/night-city.uninstall.json" ] || fail "sidecar left behind"
+cmp -s "$tmp/h/settings.json" "$tmp/h/settings.json.bak-night-city" || fail "h settings not restored"
+# 7b. install records main's pick (atom-one-dark); uninstall replays it
+mkdir -p "$tmp/i"; set_pick "$tmp/i" atom-one-dark
+: > "$STUB2_LOG"; PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/i" >/dev/null || fail "install i"
+python3 -I -c 'import json,sys; assert json.load(open(sys.argv[1])) == {"main_dark_pick": "atom-one-dark"}' "$tmp/i/night-city.uninstall.json" || fail "sidecar did not record atom-one-dark"
+grep -qx 'do app.theme --name cyberpunk-2077' "$STUB2_LOG" || fail "install did not set the theme"
+set_pick "$tmp/i" cyberpunk-2077
+# a --force re-install over the live install keeps the recorded pick
+PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/i" --force >/dev/null || fail "reinstall i"
+grep -q '"atom-one-dark"' "$tmp/i/night-city.uninstall.json" || fail "re-install lost the recorded pick"
+: > "$STUB2_LOG"; PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/i" --uninstall >/dev/null || fail "uninstall i"
+[ "$(grep '^do ' "$STUB2_LOG" | tr '\n' '|')" = "do layout.switch --name main|do app.theme --name atom-one-dark|" ] || fail "unexpected uninstall calls: $(cat "$STUB2_LOG")"
+[ ! -e "$tmp/i/night-city.uninstall.json" ] || fail "sidecar left behind (i)"
+# no pick recorded and a plain theme name: graphite, never atom-one-dark
+mkdir -p "$tmp/j"; printf '{"theme":"paper"}\n' > "$tmp/j/settings.json"
+PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/j" >/dev/null || fail "install j"
+python3 -I -c 'import json,sys; assert json.load(open(sys.argv[1])) == {"main_dark_pick": None}' "$tmp/j/night-city.uninstall.json" || fail "sidecar should record null"
+: > "$STUB2_LOG"; PATH="$tmp/bin2:$PATH" "$here/install.sh" --home "$tmp/j" --uninstall >/dev/null || fail "uninstall j"
+grep -qx 'do app.theme --name graphite' "$STUB2_LOG" || fail "null pick did not fall back to graphite: $(cat "$STUB2_LOG")"
+# 7c. an object theme keeps its light half; uninstall restores byte-identically,
+# and with the app closed prints the hint with the object's dark half
+mkdir -p "$tmp/k"; printf '{\n  "theme": {"light": "paper", "dark": "graphite"},\n  "zoom": 1\n}\n' > "$tmp/k/settings.json"; cp "$tmp/k/settings.json" "$tmp/k.orig"
+"$here/install.sh" --home "$tmp/k" --no-app >/dev/null || fail "install k"
+python3 -I -c 'import json,sys; t=json.load(open(sys.argv[1]))["theme"]; assert t=={"light":"paper","dark":"cyberpunk-2077"}, t' "$tmp/k/settings.json" || fail "object theme not merged"
+out=$("$here/install.sh" --home "$tmp/k" --no-app --uninstall 2>&1) || fail "uninstall k"
+cmp -s "$tmp/k/settings.json" "$tmp/k.orig" || fail "object theme not restored byte-identical"
+case "$out" in *"open Herdr, show the main layout, then run: herdr-app do app.theme --name graphite"*) ;; *) fail "closed-app hint missing: $out" ;; esac
+# 7d. no backup but settings already hold our values: the fresh backup leaves them out
+mkdir -p "$tmp/l"; printf '{"zoom":2,"theme":"cyberpunk-2077","sounds":{"done":"sounds/nc-done.mp3","blocked":"sounds/nc-blocked.mp3","bell":"x.mp3"}}\n' > "$tmp/l/settings.json"
+"$here/install.sh" --home "$tmp/l" --no-app >/dev/null || fail "install l"
+python3 -I -c 'import json,sys; b=json.load(open(sys.argv[1])); assert b=={"zoom":2,"sounds":{"bell":"x.mp3"}}, b' "$tmp/l/settings.json.bak-night-city" || fail "managed-state backup kept managed keys"
+"$here/install.sh" --home "$tmp/l" --no-app --uninstall >/dev/null || fail "uninstall l"
+python3 -I -c 'import json,sys; s=json.load(open(sys.argv[1])); assert "theme" not in s and s["sounds"]=={"bell":"x.mp3"}, s' "$tmp/l/settings.json" || fail "l restored our values"
+# 7e. a home path with spaces: the printed uninstall hint pastes as one argument
+mkdir -p "$tmp/m n"; out=$("$here/install.sh" --home "$tmp/m n" --no-app 2>&1) || fail "install m n"
+case "$out" in *"--home $(printf %q "$tmp/m n")"*) ;; *) fail "home path not quoted in hint: $out" ;; esac
 echo "install tests passed"
