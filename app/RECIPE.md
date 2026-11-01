@@ -393,8 +393,8 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   - olive active-space and focused-agent rows with the yellow left bar and a
     cut corner
   - a yellow active tab with black `01 · …` text and a cut corner
-  - a yellow-framed focused pane with the yellow-washed header and
-    `WORKING` plus a spinner
+  - a yellow-framed focused pane with the yellow-washed header, which reads
+    `WORKING` plus a spinner when the agent's pane is in front
   - hazard stripes at the status bar cap and above the footer
   - Rajdhani caps in all the chrome, with terminals in their own font
 - With a blocked agent, the red `NEEDS YOU` tag pulses in the agents list
