@@ -501,38 +501,6 @@ uninstall() {
 install() {
   if [ "$NO_APP" -ne 1 ]; then
     find_app
-    if app_running; then
-      local shown back
-      shown=$(shown_layout)
-      if [ "$shown" = "$LAYOUT" ]; then
-        app_do layout.switch --name main
-        shown=main
-      fi
-      if [ "$(main_dark_pick)" = "$THEME" ]; then
-        back=$(backup_theme)
-        if [ -z "$back" ] || [ "$back" = "$THEME" ]; then back=atom-one-dark; fi
-        # app.theme sets the shown layout's pick, so it has to be main.
-        [ "$shown" = main ] || app_do layout.switch --name main
-        app_do app.theme --name "$back"
-        if [ -n "$shown" ] && [ "$shown" != main ]; then app_do layout.switch --name "$shown"; fi
-        echo "main's theme set back to $back"
-      fi
-    fi
-  fi
-  restore_settings
-  local t removed=0
-  for t in "${TARGETS[@]}"; do
-    if [ -e "$HOME_DIR/$t" ] || [ -L "$HOME_DIR/$t" ]; then
-      rm -rf "${HOME_DIR:?}/$t"
-      removed=$((removed + 1))
-    fi
-  done
-  echo "removed $removed items from $HOME_DIR (kept $BACKUP_NAME)"
-}
-
-install() {
-  if [ "$NO_APP" -ne 1 ]; then
-    find_app
     [ -n "$HERDR" ] || die "herdr-app not found on PATH or at ~/.local/bin/herdr-app (use --no-app to install files only)"
     echo "using $("$HERDR" --version 2>/dev/null || echo "herdr-app (version unknown)") at $HERDR"
   fi

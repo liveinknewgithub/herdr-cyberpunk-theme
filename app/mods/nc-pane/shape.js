@@ -9,16 +9,25 @@ const RECT = () => PathBuilder.fill().move_to("0%", "0%").line_to("100%", "0%").
 
 const fill = el => el.absolute().top(0).left(0).size_full();
 
-function pinned(cut, corner) {
-  const box = div().absolute().size(cut);
+function pinned(w, h, corner) {
+  const box = div().absolute().w(w).h(h);
   const vertical = corner[0] === "t" ? box.top(0) : box.bottom(0);
   return corner[1] === "l" ? vertical.left(0) : vertical.right(0);
 }
 
+/**
+ * A w×h triangle pinned to `corner` of a relative() parent, painted in `behind`. w and h are any
+ * Length (px or "50%"): a full-height wedge slants a side (parallelogram tabs), two half-height
+ * wedges on one side make a chevron point (status chips).
+ */
+export function cutWedge(behind, w, h, corner = "br") {
+  const triangle = PathBuilder.fill().add_polygon(trianglePoints(0, corner), true).build();
+  return pinned(w, h, corner).child(fill(window.paint_path(triangle, behind)));
+}
+
 /** A cut×cut layer pinned to `corner` of a relative() parent, painted in `behind`, so the parent's corner looks cut. */
 export function cutCorner(behind, cut, corner = "br") {
-  const triangle = PathBuilder.fill().add_polygon(trianglePoints(cut, corner), true).build();
-  return pinned(cut, corner).child(fill(window.paint_path(triangle, behind)));
+  return cutWedge(behind, cut, cut, corner);
 }
 
 /** cutCorner plus a 1px line in `line` along the diagonal (a frame edge following the cut). */

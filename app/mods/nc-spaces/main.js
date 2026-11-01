@@ -5,7 +5,6 @@
 
 import { View, div, svg } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { cutCorner } from "./shape.js";
 import { spaces, machines, panes, run, openOverlay, exec, hc, theme, shared, setShared, watchFolder, window, layout } from "herdr";
 
 function find(node, id) {
@@ -35,9 +34,9 @@ const FALLBACK = 60000;
 
 // What a stored color name looks like on an avatar (the same in every mod
 // that draws space avatars): the Cyberpunk 2077 set, one color per hue.
-const MARK = { ansi6: "#00F0FF", ansi3: "#FCEE0A", ansi4: "#3D9BFF", ansi5: "#C77DFF", ansi2: "#5EF38C", ansi1: "#FF003C" };
+const MARK = { ansi6: "#2BB3AA", ansi3: "#FCEE0A", ansi4: "#3D9BFF", ansi5: "#C77DFF", ansi2: "#5EF38C", ansi1: "#FF003C" };
 // The letter on an avatar: dark on the bright fills, light on the rest (default t.foreground).
-const INK = { "#00F0FF": "#07080A", "#FCEE0A": "#07080A", "#5EF38C": "#07080A" };
+const INK = { "#2BB3AA": "#0C0510", "#FCEE0A": "#0C0510", "#5EF38C": "#0C0510" };
 
 // A space speaks up only when something in it needs you.
 export function glyph(status) {
@@ -300,7 +299,7 @@ export default class Spaces extends View {
       .flex_none()
       .justify_center()
       .rounded(0)
-      .when(on, (el) => el.bg(t.selected).child(div().absolute().left(0).top(0).bottom(0).w(2).bg(t.accent)).child(cutCorner(t.chrome, 8, "br")))
+      .when(on, (el) => el.bg(t.selected).child(div().absolute().left(0).top(0).bottom(0).w(2).bg(t.accent)))
       .when(!on, (el) => el.hover((s) => s.bg(t.hover)))
       .when(this.pressed === i && this.over !== i, (el) => el.opacity(0.5))
       .when(this.pressed !== null && this.over === i && this.pressed !== i, (el) => el.child(
@@ -335,8 +334,8 @@ export default class Spaces extends View {
           .gap(9)
           .items_center()
           .when(Boolean(tree), el => el.pl(22).child(svg("mods/workspace-chrome/branch.svg").size(13).text_color(t.dim)))
-          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(0).relative().bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color(INK[String(fill).toUpperCase()] ?? t.foreground).child([...w.name][0]?.toUpperCase() ?? "?").child(cutCorner(on ? t.selected : t.chrome, 6, "br"))))
-          .child(div().flex_shrink(0).max_w(150).truncate().text_size(13.5).font_semibold().text_color(t.foreground).child(w.name))
+          .when(!tree, el => el.child(h_flex().size(18).flex_none().rounded(0).relative().bg(fill).items_center().justify_center().text_size(10.5).font_bold().text_color(INK[String(fill).toUpperCase()] ?? t.foreground).child([...w.name][0]?.toUpperCase() ?? "?")))
+          .child(div().flex_shrink(0).max_w(150).truncate().text_size(12.5).font_bold().text_color(t.foreground).child(w.name))
           .child(g ? this.gitTail(g, tree, w.name, t) : div().flex_1()),
       );
   }
@@ -371,9 +370,9 @@ export default class Spaces extends View {
     }
     if (changed) setShared("space.colors", kept);
     return v_flex().size_full().min_h(0).bg(t.chrome).text_size(13)
-      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11).font_bold().text_color(t.dim)
-        .when(!collapsed, el => el.child(h_flex().gap(7).items_center().child(div().w(2).h(10).flex_none().bg(t.accent)).child("SPACES")))
-        .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(0).text_color(t.accent).hover(s => s.bg(t.hover).text_color(t.foreground))
+      .child(h_flex().h(31).pl(16).pr(10).items_center().justify_between().text_size(11).font_bold().text_color(t.foreground)
+        .when(!collapsed, el => el.child(h_flex().gap(6).items_center().child(div().text_color(t.ansi5).child("//")).child("SPACES")))
+        .child(div().id("space-new").size(26).flex_none().flex().items_center().justify_center().rounded(0).text_color(t.muted).hover(s => s.bg(t.hover).text_color(t.accent))
           .on_click(() => run("space.new")).child(svg("mods/workspace-chrome/plus.svg").size(14))))
       .child(v_flex().flex_1().min_h(0).px(8).pb(14).overflow_y_scrollbar().mode("always")
         .on_mouse_up("left", (_e, cx) => { this.pressed = null; cx.notify(); })

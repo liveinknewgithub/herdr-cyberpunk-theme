@@ -104,13 +104,12 @@
                     "height": 30,
                     "position": "top"
                   },
-                  "background": "background",
                   "border": {
-                    "width": 1,
+                    "width": 2,
                     "color": "border"
                   },
                   "focus": {
-                    "width": 1,
+                    "width": 2,
                     "color": "accent"
                   },
                   "radius": 0,
@@ -170,7 +169,10 @@
       "resizable": false
     }
   ],
-  "background": "canvas",
+  "background": {
+    "image": "mods/nc-chrome/backdrop.png",
+    "fit": "cover"
+  },
   "theme": "cyberpunk-2077",
   "preview": "layouts/night-city.svg",
   "terminal_padding": [
@@ -186,5 +188,6 @@
     12,
     16
   ],
-  "ui_font": "Rajdhani"
+  "ui_font": "Geist Mono",
+  "terminal_opacity": 0.92
 }

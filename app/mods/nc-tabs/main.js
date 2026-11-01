@@ -1,7 +1,10 @@
 import { View, div, svg, image } from "gpui-kit";
 import { h_flex } from "gpui-base";
 import { spaces, panes, run, openOverlay, theme, window, shared, layout, settings } from "herdr";
-import { cutCorner } from "./shape.js";
+import { cutWedge } from "./shape.js";
+
+// Tabs are parallelograms: a full-height wedge slants each side.
+const TAB_H = 26, SLANT = 8;
 
 function find(node, id) {
   if (node?.id === id) return node;
@@ -58,10 +61,9 @@ export default class Tabs extends View {
       const name = /^tb\d+$/.test(c.name) ? program?.name ?? "Terminal" : c.name;
       const number = String(space.tabs.findIndex(x => x.id === c.id) + 1).padStart(2, "0");
       const ink = c.active ? t.accent_foreground : t.muted;
-      // The active tab's chrome-colored border is invisible against the bar; it keeps the box the same size as an inactive tab's,
-      // and GPUI paints borders over children, so the border can't be the chamfer's neighbor.
-      const tab = h_flex().id(`tab-${c.id}`).h(29).px(12).gap(7).rounded(0).items_center().flex_none().text_size(12.8).font_bold()
-        .border(1).border_color(c.active ? t.chrome : t.border).bg(c.active ? t.accent : t.chrome).text_color(ink)
+      // No border: GPUI paints borders over children, so one would run straight across the slanted sides.
+      const tab = h_flex().id(`tab-${c.id}`).relative().h(TAB_H).px(SLANT + 5).gap(6).rounded(0).items_center().flex_none().text_size(11.5).font_bold()
+        .bg(c.active ? t.accent : t.raised).text_color(ink)
         .hover(s => s.bg(c.active ? t.accent : t.hover))
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
         .on_mouse_up("left", () => {
@@ -70,12 +72,13 @@ export default class Tabs extends View {
           else run("tab.select", { id: c.id });
         })
         .on_mouse_down("right", (_e, cx) => { cx.stop_propagation(); openOverlay({ mod: "menu", kind: "popup", width: 200, props: { tab: "tab", target: { id: c.id, space: space.id } } }); })
-        .when(Boolean(program?.icon), el => el.child(program.tint ? svg(program.icon).size(14).text_color(ink) : image(program.icon).size(14)))
-        .child(div().max_w(170).truncate().child(`${number} · ${(c.zoomed ? `${name} Z` : name).toUpperCase()}`))
+        .child(div().flex_none().child(number))
+        .when(Boolean(program?.icon), el => el.child(program.tint ? svg(program.icon).size(13).text_color(ink) : image(program.icon).size(13)))
+        .child(div().max_w(170).truncate().child((c.zoomed ? `${name} Z` : name).toUpperCase()))
         .when(c.status === "working", el => el.child(svg("mods/workspace-chrome/spinner.svg").size(12).flex_none().text_color(ink).spin(900)))
         .when(c.status === "blocked" || c.status === "done", el => el.child(div().size(6).bg(t[c.status])))
-        .when(c.active, el => el.child(div().id(`close-${c.id}`).text_color(t.accent_foreground).on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(svg("mods/pane/close.svg").size(12))));
-      return c.active ? tab.relative().child(cutCorner(t.chrome, 9, "br")) : tab;
+        .when(c.active, el => el.child(div().id(`close-${c.id}`).text_color(t.accent_foreground).on_mouse_down("left", stop).on_click((_e, cx) => { cx.stop_propagation(); run("tab.close", { id: c.id }); }).child(svg("mods/pane/close.svg").size(11))));
+      return tab.child(cutWedge(t.chrome, SLANT, "100%", "tl")).child(cutWedge(t.chrome, SLANT, "100%", "br"));
     };
     const root = layout(), sidebar = find(root, "sidebar"), w = window();
     // Old saved rails and a dragged-narrow sidebar can be smaller than the window buttons.
@@ -87,25 +90,23 @@ export default class Tabs extends View {
     this.syncPanel(space, panel, body, enabled);
     const panelButton = (id, label, icon) => {
       const on = panel && !panel.hidden && body?.active === id;
-      return h_flex().id(`panel-${id}`).h(26).px(8).gap(5).flex_none().items_center().rounded(0)
-        .text_size(12).bg(t.chrome).border_b(2).border_color(on ? t.accent : t.chrome).text_color(on ? t.accent : t.muted)
-        .hover(s => s.bg(t.hover)).on_mouse_down("left", stop)
+      return h_flex().id(`panel-${id}`).h(24).px(8).gap(5).flex_none().items_center().rounded(2)
+        .text_size(11).font_bold().bg(t.chrome).border(1).border_color(on ? t.accent : t.border).text_color(on ? t.accent : t.muted)
+        .hover(s => s.bg(t.hover).text_color(t.accent)).on_mouse_down("left", stop)
         .on_click(() => {
           if (on) run("layout.hide", { id: "panel" });
           else { run("layout.select", { stack: "panel-body", child: id }); run("layout.show", { id: "panel" }); }
-        }).child(svg(icon).size(14)).child(label.toUpperCase());
+        }).child(svg(icon).size(13)).child(label.toUpperCase());
     };
     return h_flex().size_full().relative().min_w(0).px(10).pl(lightsPadding).gap(3).items_center().bg(t.chrome).border_b(1).border_color(t.border)
       .on_mouse_up("left", () => { this.pressed = null; })
       .on_scroll_wheel(e => { if (Math.abs(e.delta.y) >= 1) run(e.delta.y > 0 ? "tab.prev" : "tab.next"); })
-      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(3).overflow_x_scrollbar().children(shown.map(item)))
-      .child(button("tab-new", "+", () => openOverlay({ mod: "nc-new-menu", kind: "popup", width: 250, height: 512, frame: "none" }), t.accent, t.accent).text_size(16))
+      .child(h_flex().id("tab-scroll").flex_1().min_w(0).h_full().items_center().gap(4).overflow_x_scrollbar().children(shown.map(item)))
+      .child(button("tab-new", "+", () => openOverlay({ mod: "nc-new-menu", kind: "popup", width: 250, height: 512, frame: "none" }), t.accent, t.accent).text_size(17).font_bold())
       .when(enabled.includes("files"), el => el.child(panelButton("files", "Files", "mods/files/file.svg")))
-      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Changes", "mods/changes/changes.svg")))
+      .when(enabled.includes("changes"), el => el.child(panelButton("changes", "Diff", "mods/changes/changes.svg")))
       .when(w?.buttons, el => el.child(button("minimize", w.platform === "windows" ? svg("mods/nc-tabs/win-min.svg").size(16) : "−", () => run("window.minimize")))
         .child(button("maximize", w.platform === "windows" ? svg(`mods/nc-tabs/${w.maximized ? "win-restore" : "win-max"}.svg`).size(16) : "□", () => run("window.maximize")))
-        .child(button("close-window", w.platform === "windows" ? svg("mods/nc-tabs/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))))
-      // The first tab's anchor: a 1px yellow run over the bar's bottom border.
-      .child(div().absolute().left(lightsPadding).bottom(0).h(1).w(180).bg(t.accent));
+        .child(button("close-window", w.platform === "windows" ? svg("mods/nc-tabs/win-close.svg").size(16) : svg("mods/pane/close.svg").size(13), () => run("window.close"))));
   }
 }

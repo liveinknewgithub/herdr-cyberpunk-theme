@@ -346,7 +346,7 @@ export default class Agents extends View {
         .rounded(0)
         .items_center()
         .gap(9)
-        .when(a.focused, (el) => el.bg(t.selected).child(div().absolute().left(0).top(0).bottom(0).w(2).bg(t.accent)).child(cutCorner(t.chrome, 8, "br")))
+        .when(a.focused, (el) => el.bg(t.selected).child(div().absolute().left(0).top(0).bottom(0).w(2).bg(t.accent)))
         .cursor_pointer()
         .when(!a.focused, (el) => el.hover((s) => s.bg(t.hover)))
         .on_hover((on, cx) => {
@@ -418,7 +418,7 @@ export default class Agents extends View {
       .bg(t.chrome)
       .border_t(1)
       .border_color(t.border)
-      .text_size(13)
+      .text_size(12.5)
       .when(!collapsed, (el) =>
         el.child(
           h_flex()
@@ -430,8 +430,8 @@ export default class Agents extends View {
             .justify_between()
             .text_size(11)
             .font_bold()
-            .text_color(t.dim)
-            .child(h_flex().gap(7).items_center().child(div().w(2).h(10).flex_none().bg(t.accent)).child("AGENTS"))
+            .text_color(t.foreground)
+            .child(h_flex().gap(6).items_center().child(div().text_color(t.ansi5).child("//")).child("AGENTS"))
             .child(
               div()
                 .id("ag-sort")
@@ -445,7 +445,7 @@ export default class Agents extends View {
         ),
       )
       .when(list.length === 0 && !collapsed, (el) =>
-        el.child(div().px(12).text_size(12).text_color(t.dim).child("No agent status yet. Agents show up here when they report their status. Older versions and agents inside tmux may not.")),
+        el.child(div().px(12).text_size(11.5).line_height("17px").text_color(t.muted).child("No agent status yet. Agents show up here when they report their status. Older versions and agents inside tmux may not.")),
       )
       .child(v_flex().id("ag-list").flex_1().min_h(0).px(collapsed ? 0 : 8).overflow_y_scrollbar().mode("always").children(rows))
       .when(collapsed, (el) =>

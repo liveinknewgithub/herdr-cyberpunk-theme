@@ -11,7 +11,7 @@ import json,sys; s=json.load(open(sys.argv[1]))
 assert s["theme"]=="cyberpunk-2077" and s["zoom"]==1, s
 assert s["sounds"]=={"done":"sounds/nc-done.mp3","blocked":"sounds/nc-blocked.mp3"}, s
 EOF
-for p in layouts/night-city.json layouts/night-city.svg themes/cyberpunk-2077.json mods/nc-chrome/main.js mods/nc-chrome/fonts/Rajdhani-Bold.ttf mods/nc-status/main.js sounds/nc-done.mp3 settings.json.bak-night-city; do [ -e "$tmp/a/$p" ] || fail "missing $p"; done
+for p in layouts/night-city.json layouts/night-city.svg themes/cyberpunk-2077.json mods/nc-chrome/main.js mods/nc-chrome/backdrop.png mods/nc-status/main.js sounds/nc-done.mp3 settings.json.bak-night-city; do [ -e "$tmp/a/$p" ] || fail "missing $p"; done
 "$here/install.sh" --home "$tmp/a" --no-app >/dev/null 2>&1 && fail "second install without --force should refuse"
 "$here/install.sh" --home "$tmp/a" --no-app --force >/dev/null || fail "force reinstall"
 "$here/install.sh" --home "$tmp/a" --no-app --uninstall >/dev/null || fail "uninstall a"
@@ -53,7 +53,8 @@ cmp -s "$tmp/e/settings.json" "$tmp/e/settings.json.bak-night-city" || fail "act
 python3 -I -c 'import json,sys; assert json.load(open(sys.argv[1]))["theme"]=="paper"' "$tmp/e/settings.json.bak-night-city" || fail "re-install replaced the live backup"
 # 5. Finder / app-generated files in a working copy are never shipped
 cp -R "$here" "$tmp/src"
-touch "$tmp/src/mods/nc-chrome/.DS_Store" "$tmp/src/mods/nc-chrome/gpui-kit.d.ts" "$tmp/src/mods/nc-chrome/jsconfig.json" "$tmp/src/mods/nc-chrome/fonts/.DS_Store"
+mkdir -p "$tmp/src/mods/nc-chrome/nested"
+touch "$tmp/src/mods/nc-chrome/.DS_Store" "$tmp/src/mods/nc-chrome/gpui-kit.d.ts" "$tmp/src/mods/nc-chrome/jsconfig.json" "$tmp/src/mods/nc-chrome/nested/.DS_Store"
 mkdir -p "$tmp/f"; "$tmp/src/install.sh" --home "$tmp/f" --no-app >/dev/null || fail "install f"
 [ -z "$(find "$tmp/f/mods" -name .DS_Store -o -name gpui-kit.d.ts -o -name jsconfig.json)" ] || fail "excluded files were copied"
 [ -e "$tmp/f/mods/nc-chrome/main.js" ] || fail "excludes removed real files"

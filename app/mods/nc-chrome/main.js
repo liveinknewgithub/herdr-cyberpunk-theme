@@ -24,10 +24,11 @@ function toggleSidebar() {
   run("layout.resize", { id: "sidebar", px: narrow() ? (shared("sidebar.width") ?? 268) : appWindow()?.platform === "macos" ? 76 : 44 });
 }
 
-// The glitch split: the wordmark's fringes, the cyan top half and red bottom half of offset copies.
-const CYAN = "#00F0FF";
-const RED = "#FF003C";
-const WORD = "HERDR";
+// The netrunner slashes that mark the wordmark (and, in the sibling mods, every section header).
+const slashes = t => div().flex_none().text_color(t.ansi5).child("//");
+
+// A thin yellow/black hazard stripe, full width.
+const hazard = t => div().relative().h(4).w_full().flex_none().child(stripesLayer(t.accent, 3, 8));
 
 export default class WorkspaceChrome extends View {
   button(id, label, action) {
@@ -35,39 +36,39 @@ export default class WorkspaceChrome extends View {
     return div().id(id).size(26).flex_none().flex().items_center().justify_center().rounded(0).text_color(t.dim).hover(s => s.bg(t.hover).text_color(t.accent))
       .on_mouse_down("left", (_e, cx) => cx.stop_propagation()).on_click(action).child(label);
   }
-  // Three copies in one box: cyan and red offset behind, each cut to half its height, yellow on top in flow.
+  // HERDR // ▮ — the wordmark, the slashes, and a blinking cursor block.
   wordmark() {
     const t = theme();
-    return div().relative().flex_none().text_size(17).line_height("18px").font_bold().whitespace_nowrap()
-      .child(div().absolute().left(-1.5).top(-1).h(9).overflow_hidden().text_color(CYAN).child(div().child(WORD)))
-      .child(div().absolute().left(1.5).top(10).h(9).overflow_hidden().text_color(RED).child(div().mt(-9).child(WORD)))
-      .child(div().text_color(t.accent).child(WORD));
+    return h_flex().flex_none().gap(6).items_center().text_size(15).line_height("17px").font_bold().whitespace_nowrap()
+      .child(div().text_color(t.accent).child("HERDR"))
+      .child(slashes(t))
+      .child(div().w(7).h(13).flex_none().bg(t.accent).loop("opacity", { from: 0.18, to: 0.7, period: 1600 }));
   }
   render() {
     const t = theme();
     const collapsed = narrow();
     const mac = appWindow()?.platform === "macos";
     if (props()?.footer) {
-      const row = (id, icon, label, dim, action) => h_flex().id(id).h(28).px(8).gap(9).items_center().rounded(0)
-        .text_color(dim ? t.dim : t.muted).hover(s => s.bg(t.hover).text_color(t.foreground)).cursor_pointer()
-        .on_click(action).child(svg(`mods/nc-chrome/${icon}.svg`).size(14))
+      const row = (id, icon, label, action) => h_flex().id(id).h(28).px(8).gap(9).items_center().rounded(0)
+        .text_color(t.foreground).hover(s => s.bg(t.hover).text_color(t.accent)).cursor_pointer()
+        .on_click(action).child(svg(`mods/nc-chrome/${icon}.svg`).size(13).text_color(t.dim))
         .when(!collapsed, el => el.child(label.toUpperCase()));
       return v_flex().size_full().bg(t.chrome)
-        // The hazard stripe sits above the footer's border.
-        .child(div().relative().h(4).w_full().flex_none().child(stripesLayer(t.accent, 6, 12)))
-        .child(v_flex().flex_1().border_t(1).border_color(t.border).px(8).pt(2).pb(6).text_size(13).font_bold()
-          .child(row("settings", "settings", "Settings", false, () => run("app.settings"))
+        .child(hazard(t))
+        .child(v_flex().flex_1().px(6).pt(3).pb(5).text_size(11).font_bold()
+          .child(row("settings", "settings", "Settings", () => run("app.settings"))
             .when(Boolean(updates().app.ready), el => el.child(div().size(6).bg(t.accent))))
-          .child(row("machine", "plus", "Add machine", true, () => run("mod.open", { name: "machine-add" }))));
+          .child(row("machine", "plus", "Jack in a machine", () => run("mod.open", { name: "machine-add" }))));
     }
-    const ram = size => svg("mods/nc-chrome/ram.svg").size(size).flex_none().text_color(t.accent);
-    return h_flex().size_full().bg(t.chrome).border_b(1).border_color(t.accent).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center()
-      .when(mac && !collapsed, el => el.pl(76))
-      .when(!collapsed, el => el.child(h_flex().flex_1().min_w(0).gap(8).items_center().child(ram(22))
-        .child(v_flex().child(this.wordmark()).child(div().text_size(9.5).line_height("11px").text_color(t.dim).child("\u259A\u259E NIGHT CITY")))))
-      .when(!collapsed, el => el.child(this.button("search", svg("mods/nc-chrome/search.svg").size(15), () => run("mod.open", { name: "picker" }))))
-      // On the macOS rail the traffic lights (12,16) fill the row's middle, so the ram sits small under them; the agents list's » unfolds it.
-      .when(collapsed && mac, el => el.pl(0).pr(0).pb(1).justify_center().items_end().child(ram(14)))
-      .when(!(collapsed && mac), el => el.child(this.button("sidebar-toggle", svg("mods/nc-chrome/sidebar.svg").size(15), toggleSidebar)));
+    return v_flex().size_full().bg(t.chrome)
+      .child(h_flex().flex_1().min_h(0).pl(collapsed ? 6 : 14).pr(10).gap(4).items_center()
+        .when(mac && !collapsed, el => el.pl(76))
+        .when(!collapsed, el => el.child(v_flex().flex_1().min_w(0).gap(1).child(this.wordmark())
+          .child(div().text_size(9).line_height("11px").text_color(t.dim).whitespace_nowrap().child("NETRUNNER/OS 2077"))))
+        .when(!collapsed, el => el.child(this.button("search", svg("mods/nc-chrome/search.svg").size(14), () => run("mod.open", { name: "picker" }))))
+        // On the macOS rail the traffic lights (12,16) fill the row's middle, so the slashes sit small under them; the agents list's » unfolds it.
+        .when(collapsed && mac, el => el.pl(0).pr(0).pb(2).justify_center().items_end().text_size(12).font_bold().child(slashes(t)))
+        .when(!(collapsed && mac), el => el.child(this.button("sidebar-toggle", svg("mods/nc-chrome/sidebar.svg").size(14), toggleSidebar))))
+      .child(hazard(t));
   }
 }
