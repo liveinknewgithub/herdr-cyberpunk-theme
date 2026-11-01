@@ -94,7 +94,7 @@ app_do() {
 
 # Prints the layout the window shows (empty if unknown).
 shown_layout() {
-  "$HERDR" status 2>/dev/null | python3 -I -c 'import json,sys
+  { "$HERDR" status 2>/dev/null || true; } | python3 -I -c 'import json,sys
 try: print(json.load(sys.stdin).get("layout") or "")
 except Exception: print("")'
 }
@@ -111,12 +111,64 @@ copy_files() {
     mkdir -p "$(dirname "$HOME_DIR/$t")"
     rm -rf "${HOME_DIR:?}/$t"
     cp -R "$SRC/$t" "$HOME_DIR/$t"
+    # Never ship Finder or app-generated files from a working copy.
+    if [ -d "$HOME_DIR/$t" ]; then
+      find "$HOME_DIR/$t" \( -name .DS_Store -o -name gpui-kit.d.ts -o -name jsconfig.json \) -delete
+    fi
   done
   echo "copied ${#TARGETS[@]} items into $HOME_DIR"
 }
 
+# Validates settings.json (and a backup that would be kept) before anything
+# is written. Sets SETTINGS_STATE to "managed" when settings.json already
+# holds one of our values (a re-install over a live install), else "clean".
+check_settings() {
+  local settings="$HOME_DIR/settings.json" backup="$HOME_DIR/$BACKUP_NAME"
+  SETTINGS_STATE=$(python3 -I - "$settings" "$backup" "$THEME" <<'PY'
+import json, os, sys
+path, backup_path, theme = sys.argv[1], sys.argv[2], sys.argv[3]
+
+def load(p):
+    name = os.path.basename(p)
+    try:
+        with open(p, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception as e:
+        sys.exit("install.sh: %s is not valid JSON (%s); fix or move it, then re-run" % (name, e))
+    if not isinstance(d, dict):
+        sys.exit("install.sh: %s: top level is not an object" % name)
+    if "sounds" in d and not isinstance(d["sounds"], dict):
+        sys.exit('install.sh: %s: "sounds" is not an object' % name)
+    return d
+
+s = load(path) if os.path.exists(path) else {}
+snd = s.get("sounds") or {}
+managed = s.get("theme") == theme or any(
+    isinstance(snd.get(k), str) and snd[k].startswith("sounds/nc-") for k in ("done", "blocked"))
+if managed and os.path.exists(backup_path):
+    load(backup_path)
+print("managed" if managed else "clean")
+PY
+)
+}
+
+# Moves the active backup aside as <name>.<unix seconds> (kept, not used).
+archive_backup() {
+  local backup="$HOME_DIR/$BACKUP_NAME" ts dst n=1
+  ts=$(date +%s)
+  dst="$backup.$ts"
+  while [ -e "$dst" ]; do dst="$backup.$ts-$n"; n=$((n + 1)); done
+  mv "$backup" "$dst"
+  echo "moved the previous backup aside to ${dst##*/}"
+}
+
 merge_settings() {
   local settings="$HOME_DIR/settings.json" backup="$HOME_DIR/$BACKUP_NAME"
+  # The backup is single-use: one left from an earlier install/uninstall
+  # cycle would restore a theme the person has since changed.
+  if [ -e "$backup" ] && [ "$SETTINGS_STATE" = clean ]; then
+    archive_backup
+  fi
   if [ ! -e "$backup" ]; then
     if [ -e "$settings" ]; then
       cp "$settings" "$backup"
@@ -161,10 +213,14 @@ path, backup_path, theme = sys.argv[1], sys.argv[2], sys.argv[3]
 OURS = {"done": "sounds/nc-done.mp3", "blocked": "sounds/nc-blocked.mp3"}
 
 def load(p):
-    with open(p, encoding="utf-8") as f:
-        d = json.load(f)
+    name = os.path.basename(p)
+    try:
+        with open(p, encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception as e:
+        raise ValueError("%s is not valid JSON (%s)" % (name, e))
     if not isinstance(d, dict):
-        raise ValueError("%s: top level is not an object" % os.path.basename(p))
+        raise ValueError("%s: top level is not an object" % name)
     return d
 
 def strip(d):
@@ -238,7 +294,7 @@ try:
 except SystemExit:
     raise
 except Exception as e:
-    sys.exit("install.sh: settings.json: %s" % e)
+    sys.exit("install.sh: uninstall stopped, nothing removed: %s" % e)
 PY
 }
 
@@ -256,7 +312,7 @@ check_mods() {
 
 print_status_errors() {
   sleep 1
-  "$HERDR" status 2>/dev/null | python3 -I -c 'import json,sys
+  { "$HERDR" status 2>/dev/null || true; } | python3 -I -c 'import json,sys
 try: errs = json.load(sys.stdin).get("errors") or []
 except Exception: errs = ["could not read herdr-app status"]
 for e in errs: print("herdr-app status error: %s" % (e if isinstance(e, str) else json.dumps(e)))
@@ -343,6 +399,7 @@ install() {
   fi
   local home_flag=""
   [ "$HOME_DIR" = "$HOME/.config/herdr-app" ] || home_flag=" --home $HOME_DIR"
+  check_settings
   copy_files
   merge_settings
   if [ "$NO_APP" -ne 1 ]; then
