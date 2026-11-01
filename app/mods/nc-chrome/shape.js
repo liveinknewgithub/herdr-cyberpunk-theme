@@ -28,7 +28,11 @@ export function cutCornerEdge(behind, line, cut, corner = "tr") {
   return cutCorner(behind, cut, corner).child(fill(window.paint_path(edge, line)));
 }
 
-/** A layer filling its relative() parent with a linear gradient (angle in degrees). */
+/**
+ * A layer filling its relative() parent with a linear gradient (angle in degrees, 90 = left to right).
+ * `from`/`to` are Colors or Background.stop(color, position), where position is a 0–1 fraction
+ * of the gradient line, not a percent: stop(c, 0.4) ends at 40% (verified with herdr-app shot; 40 runs off the end).
+ */
 export function gradientLayer(angle, from, to) {
   return fill(window.paint_path(RECT(), Background.linear_gradient(angle, from, to)));
 }

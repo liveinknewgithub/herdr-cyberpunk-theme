@@ -19,7 +19,7 @@ const EDGES = {
 };
 
 function lookup(table, corner) {
-  if (!Object.hasOwn(table, corner)) throw new RangeError(`unknown corner: ${corner} (expected one of ${CORNERS.join(", ")})`);
+  if (!Object.prototype.hasOwnProperty.call(table, corner)) throw new RangeError(`unknown corner: ${corner} (expected one of ${CORNERS.join(", ")})`);
   return table[corner];
 }
 

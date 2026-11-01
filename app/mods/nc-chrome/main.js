@@ -40,7 +40,7 @@ export default class WorkspaceChrome extends View {
     const t = theme();
     return div().relative().flex_none().text_size(17).line_height("18px").font_bold().whitespace_nowrap()
       .child(div().absolute().left(-1.5).top(-1).h(9).overflow_hidden().text_color(CYAN).child(div().child(WORD)))
-      .child(div().absolute().left(1.5).top(9).h(9).overflow_hidden().text_color(RED).child(div().mt(-9).child(WORD)))
+      .child(div().absolute().left(1.5).top(10).h(9).overflow_hidden().text_color(RED).child(div().mt(-9).child(WORD)))
       .child(div().text_color(t.accent).child(WORD));
   }
   render() {
