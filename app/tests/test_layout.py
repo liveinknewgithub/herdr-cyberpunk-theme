@@ -12,6 +12,7 @@ class Layout(unittest.TestCase):
     def test_root_look(self):
         self.assertEqual(L["theme"], "cyberpunk-2077"); self.assertEqual(L["titlebar"], "none")
         self.assertEqual(L["preview"], "layouts/night-city.svg"); self.assertEqual(L["background"], "canvas")
+        self.assertEqual(L["ui_font"], "Rajdhani")
     def test_ids_kept(self):
         self.assertTrue({"root","sidebar","brand","sidebar-lists","spaces","agents","sidebar-footer","work","tabs","work-body","main","panel","panel-body","files","changes","status"} <= ids(L))
     def test_pane_frame(self):
