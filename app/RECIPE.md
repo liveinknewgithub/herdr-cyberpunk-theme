@@ -120,6 +120,13 @@ sidebar, tab bar and status bar are opaque `#0C0510`.
   Dragging the empty bar moves the window. On Linux and Windows the bar also
   draws minimize, maximize and close.
 - **Work area:** 8 px padding all round, with the backdrop behind.
+  - In the left gutter, between the sidebar's edge line and the pane, a HUD
+    connector: a 4×2 px `#FCEE0A` tick runs into the pane frame at exactly
+    the height of the sidebar's spaces/agents divider, and a 3 px pink gauge
+    (`#FF3D8B` at 75%) hugs the sidebar's edge line, starting 13 px below
+    the divider and running 92 px down. It follows the divider when the
+    window resizes, the lists are dragged, or the zoom changes, and
+    disappears while the sidebar is hidden.
   - The pane has a 2 px frame, `#36122C`, turning `#FCEE0A` when focused.
     Corners are square and the frame has no fill. A lone pane is framed too,
     and split panes sit 8 px apart.
@@ -250,20 +257,27 @@ root  row  background { image "mods/nc-chrome/backdrop.png", fit cover }, theme 
 │  └─ sidebar-footer  block  px 69                → nc-chrome  props { footer: true }
 └─ work  column  resizable false
    ├─ tabs       block  px 42, window_drag        → nc-tabs
-   ├─ work-body  row  padding 8, gap 8
-   │  ├─ main    block  tab "active", pane { header { mod nc-pane, reveal always, height 30, top },
-   │  │                 border 2 border, focus 2 accent, radius 0, gap 8, lone true }
-   │  └─ panel   column px 368, min 280, max 900, hidden
-   │     └─ panel-body  stack active "files": files → files, changes → changes
+   ├─ work-body  row  padding [8, 0], gap 0, resizable false
+   │  ├─ edge        block  px 8                 → nc-edge
+   │  ├─ work-inner  row  gap 8
+   │  │  ├─ main    block  tab "active", pane { header { mod nc-pane, reveal always, height 30, top },
+   │  │  │                 border 2 border, focus 2 accent, radius 0, gap 8, lone true }
+   │  │  └─ panel   column px 368, min 280, max 900, hidden
+   │  │     └─ panel-body  stack active "files": files → files, changes → changes
+   │  └─ edge-right  block  px 8                 → nc-edge  props { side: "right" } (draws nothing)
    └─ status     block  px 28                     → nc-status
 ```
 
 The pane has no `background`: an unfilled frame is what lets the backdrop
 through.
 
-Every mod is a clone of a shipped mod (`cloned_from` 0.1.11 in its `mod.json`,
-`place: "none"`). Each keeps the original's behavior, and only the look
-changed:
+The two `edge` blocks replace work-body's horizontal padding, so the pane sits
+exactly where 8 px padding put it; main and panel moved into `work-inner`,
+which keeps their 8 px gap and the drag between them.
+
+Every mod but `nc-edge` is a clone of a shipped mod (`cloned_from` 0.1.11 in
+its `mod.json`, `place: "none"`). Each keeps the original's behavior, and only
+the look changed. `nc-edge` is new (`place: "none"`):
 
 | Mod | Cloned from | Role, props | `herdr` used | Commands it runs |
 | --- | --- | --- | --- | --- |
@@ -274,6 +288,7 @@ changed:
 | `nc-pane` | `pane` | pane header; app passes `{ pane, terminal }` | `panes props run theme home` | `pane.focus/split/zoom/close` |
 | `nc-status` | `workspace-status` | status bar | `spaces agents theme run window keys` | `app.palette` |
 | `nc-new-menu` | `new-menu` | the `+` menu | `theme spaces panes knownAgents run openOverlay closeOverlay props window keys` | `tab.new`, `space.new`; `worktree` dialog |
+| `nc-edge` | (new) | left-gutter tick + gauge; `props.side: "right"` = empty spacer | `theme layout props settings` | none; the divider math is pure, in `divider.js` |
 
 Shared keys: `space.colors`, `sidebar.width`, `sidebar.collapsed`,
 `agents.sort`, `workspace.panels`. `localStorage`: tabs `panels`, agents
@@ -366,6 +381,11 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   `terminal_opacity` below 1 (here `0.92`) and a pane frame with no
   `background`. Fill the frame, or set the opacity to 1, and the sun is
   gone. The gaps show it either way.
+- **Mods report their size in on-screen points.** `on_size_change` gives the
+  block's height after zoom, while layout `px` sizes and a mod's own
+  positions are at zoom 1. `nc-edge` divides the reported height by
+  `settings().zoom` before working out where the divider is; without that the
+  tick slid ~150 pt below the divider at zoom 1.3.
 - **The status clock is data.** `nc-status` redraws on `cx.timer.every(10000)`,
   so the minute can be up to 10 s late. That timer refreshes data and is the
   only kind of timer allowed. Motion (spin, blink) goes through `.spin` and
@@ -464,7 +484,7 @@ the rest: `nc-pane` split/zoom/close icons, `nc-tabs` Windows window icons,
   `night-city.uninstall.json` sidecar included). With a stub `herdr-app`, it
   checks that uninstall replays the recorded `main` pick, and that an object
   theme keeps its light half.
-- `herdr-app check ~/.config/herdr-app/mods/nc-<name>` passes for all seven
+- `herdr-app check ~/.config/herdr-app/mods/nc-<name>` passes for all eight
   mods, and `herdr-app status` shows `"layout": "night-city"` and
   `"errors": []`.
 - `python3 -I app/backdrop/make_backdrop.py` reproduces

@@ -91,69 +91,103 @@
           "type": "row",
           "children": [
             {
-              "id": "main",
+              "id": "edge",
               "type": "block",
+              "size": {
+                "px": 8
+              },
               "content": {
-                "tab": "active",
-                "pane": {
-                  "header": {
-                    "content": {
-                      "mod": "nc-pane"
-                    },
-                    "reveal": "always",
-                    "height": 30,
-                    "position": "top"
-                  },
-                  "border": {
-                    "width": 2,
-                    "color": "border"
-                  },
-                  "focus": {
-                    "width": 2,
-                    "color": "accent"
-                  },
-                  "radius": 0,
-                  "gap": 8,
-                  "lone": true
-                }
+                "mod": "nc-edge"
               }
             },
             {
-              "id": "panel",
-              "type": "column",
+              "id": "work-inner",
+              "type": "row",
+              "gap": 8,
               "children": [
                 {
-                  "id": "panel-body",
-                  "type": "stack",
+                  "id": "main",
+                  "type": "block",
+                  "content": {
+                    "tab": "active",
+                    "pane": {
+                      "header": {
+                        "content": {
+                          "mod": "nc-pane"
+                        },
+                        "reveal": "always",
+                        "height": 30,
+                        "position": "top"
+                      },
+                      "border": {
+                        "width": 2,
+                        "color": "border"
+                      },
+                      "focus": {
+                        "width": 2,
+                        "color": "accent"
+                      },
+                      "radius": 0,
+                      "gap": 8,
+                      "lone": true
+                    }
+                  }
+                },
+                {
+                  "id": "panel",
+                  "type": "column",
                   "children": [
                     {
-                      "id": "files",
-                      "type": "block",
-                      "content": {
-                        "mod": "files"
-                      }
-                    },
-                    {
-                      "id": "changes",
-                      "type": "block",
-                      "content": {
-                        "mod": "changes"
-                      }
+                      "id": "panel-body",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "id": "files",
+                          "type": "block",
+                          "content": {
+                            "mod": "files"
+                          }
+                        },
+                        {
+                          "id": "changes",
+                          "type": "block",
+                          "content": {
+                            "mod": "changes"
+                          }
+                        }
+                      ],
+                      "active": "files"
                     }
                   ],
-                  "active": "files"
+                  "size": {
+                    "px": 368
+                  },
+                  "min": 280,
+                  "max": 900,
+                  "hidden": true
                 }
-              ],
+              ]
+            },
+            {
+              "id": "edge-right",
+              "type": "block",
               "size": {
-                "px": 368
+                "px": 8
               },
-              "min": 280,
-              "max": 900,
-              "hidden": true
+              "content": {
+                "mod": "nc-edge",
+                "props": {
+                  "side": "right"
+                }
+              }
             }
           ],
-          "padding": 8,
-          "gap": 8
+          "padding": [
+            8,
+            0
+          ],
+          "gap": 0,
+          "resizable": false
         },
         {
           "id": "status",

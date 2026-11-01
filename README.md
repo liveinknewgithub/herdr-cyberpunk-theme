@@ -6,7 +6,7 @@ Cyberpunk 2077 theme for [Herdr](https://herdr.dev), in two parts: the Night Cit
 
 | Path | Purpose |
 | --- | --- |
-| `app/` | Night City layout for the Herdr desktop app, laid out like a Herdr home: `layouts/night-city.*`, the `cyberpunk-2077` theme, seven `nc-*` mods, a generated backdrop, two `nc-*` sounds, `install.sh`, tests and [`RECIPE.md`](app/RECIPE.md). See [App layout (Night City)](#app-layout-night-city). |
+| `app/` | Night City layout for the Herdr desktop app, laid out like a Herdr home: `layouts/night-city.*`, the `cyberpunk-2077` theme, eight `nc-*` mods, a generated backdrop, two `nc-*` sounds, `install.sh`, tests and [`RECIPE.md`](app/RECIPE.md). See [App layout (Night City)](#app-layout-night-city). |
 | `config.toml` | Full Herdr config: `[theme.custom]` palette (yellow `#FCEE0A` on near-black, cyan `#00F0FF` branches, red `#FF003C` blocked), symbol status indicators, pane frames labeled with agent logos, a `NIGHT CITY // 2077 // HH:MM` tab-bar readout, one-line agent rows with a single yellow glyph per agent (no per-agent brand-color table), and space rows with the workspace in yellow and the branch in cyan. |
 | `plugins/agent-icons/` | `local.agent-icons` plugin. When Herdr detects an agent (and at server startup) it sets the agent's display name to a Nerd Font logo with `herdr pane report-metadata --display-agent`, guarded by `--agent` so the logo goes away when that agent exits. |
 
@@ -21,7 +21,7 @@ bar has a `LOCALHOST` chip, a NET meter and a clock chip. A red `NEEDS YOU`
 tag blinks when an agent needs you. Behind it all is a synthwave backdrop (a
 striped sun, a magenta horizon and a perspective grid) that shows in the gaps
 and faintly through the terminals. It's a layout, a theme (`cyberpunk-2077`),
-seven cloned `nc-*` mods and two sounds. `app/` is laid out like a Herdr
+eight `nc-*` mods (seven restyled clones plus a gutter decoration) and two sounds. `app/` is laid out like a Herdr
 home, so it's also a herdr.dev layout folder (topic `herdr-layout`).
 [`app/RECIPE.md`](app/RECIPE.md) describes every region, size and color.
 

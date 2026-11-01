@@ -31,4 +31,13 @@ class Layout(unittest.TestCase):
         self.assertEqual(node(L, "tabs")["content"]["mod"], "nc-tabs")
         self.assertEqual(node(L, "main")["content"]["pane"]["header"]["content"]["mod"], "nc-pane")
         self.assertEqual(node(L, "status")["content"]["mod"], "nc-status")
+    def test_edge_gutter(self):
+        wb = node(L, "work-body")
+        self.assertEqual(wb["padding"], [8, 0]); self.assertEqual(wb["gap"], 0)
+        self.assertEqual([c["id"] for c in wb["children"]], ["edge", "work-inner", "edge-right"])
+        self.assertEqual(node(L, "edge")["content"], {"mod": "nc-edge"}); self.assertEqual(node(L, "edge")["size"], {"px": 8})
+        self.assertEqual(node(L, "edge-right")["content"], {"mod": "nc-edge", "props": {"side": "right"}})
+        self.assertEqual(node(L, "edge-right")["size"], {"px": 8})
+        inner = node(L, "work-inner")
+        self.assertEqual(inner["gap"], 8); self.assertEqual([c["id"] for c in inner["children"]], ["main", "panel"])
 if __name__ == "__main__": unittest.main()
